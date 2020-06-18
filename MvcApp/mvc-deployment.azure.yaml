@@ -1,0 +1,73 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mvc-deployment
+spec:
+  selector:
+    matchLabels:
+      app: mvc
+  replicas: 1 # tells deployment to run 2 pods matching the template
+  "strategy": {
+      "type": "RollingUpdate",
+      "rollingUpdate": {
+        "maxUnavailable": 1,
+        "maxSurge": 1
+      }
+    }
+  template:
+    metadata:
+      labels:
+        app: mvc
+    spec:
+      containers:
+      - name: mvc
+        image: yabhane/products-store-mvc:v0.1
+        ports:
+        - containerPort: 80
+        resources:
+          limits:
+            cpu: "1"
+            memory: "200Mi"
+          requests:
+            cpu: "0.1"
+            memory: "100Mi"
+        env:
+          - name: ConnectionStrings__ProductsContext
+            valueFrom:
+              secretKeyRef:
+                name: mssql-secret
+                key: db-connection-string-secret
+        #     secretKeyRef:
+        #       name: mssql-secret-third-tets
+        #       key: db-connection-string-secret
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: mvc-service
+spec:
+  selector:
+    app: mvc
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 80
+  type: LoadBalancer
+---
+# apiVersion: extensions/v1beta1
+# kind: Ingress
+# metadata:
+#   name: webapp-ingress
+#   namespace: default
+#   annotations:
+#     kubernetes.io/ingress.class: nginx
+#     nginx.ingress.kubernetes.io/ssl-redirect: "false"
+#     nginx.ingress.kubernetes.io/rewrite-target: /$2
+# spec:
+#   rules:
+#   - http:
+#       paths:
+#       - path: /api/hello-world
+#         backend:
+#           serviceName: mvc-service
+#           servicePort: 80
